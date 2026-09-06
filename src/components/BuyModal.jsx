@@ -66,14 +66,15 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
         customer_telegram: customerTelegram.trim() || undefined
       };
 
-      const res = await fetch('/api/orders/inquire', {
+      const res = await fetch('/api/orders/inquiry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
-        throw new Error('Failed to generate order inquiry');
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || 'Failed to generate order inquiry');
       }
 
       const data = await res.json();
@@ -250,7 +251,7 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
 
           {/* Order Success State */}
           {orderSuccess && (
-            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs space-y-1">
+            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs space-y-2">
               <div className="font-bold flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>{lang === 'kh' ? 'បានបង្កើតវិក្កយបត្រដោយជោគជ័យ!' : 'Order Inquiry Generated!'}</span>
@@ -258,6 +259,17 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
               <p className="text-[11px] text-slate-600 dark:text-slate-300">
                 Code: <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">#{orderSuccess.reference_code}</span>. {t('open_telegram_msg')}
               </p>
+              {orderSuccess.telegram_url && (
+                <a
+                  href={orderSuccess.telegram_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{lang === 'kh' ? 'បើក Telegram ឥឡូវនេះ' : 'Open Telegram Now'}</span>
+                </a>
+              )}
             </div>
           )}
 
