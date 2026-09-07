@@ -17,12 +17,7 @@ import {
   Music2,
   Filter,
   Loader2,
-  ArrowRight,
-  Headphones,
-  HeartHandshake,
-  Send,
-  BookOpen,
-  Layers
+  ArrowRight
 } from 'lucide-react';
 
 const MainStore = () => {
@@ -193,7 +188,7 @@ const MainStore = () => {
   const currencySymbol = settings?.currency_symbol || '$';
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-pink-500 selection:text-white transition-colors duration-200">
+    <div className="flex min-h-screen flex-col bg-zinc-50 text-zinc-900 transition-colors duration-200 dark:bg-zinc-950 dark:text-zinc-50">
       
       {/* Top Multi-Page Navigation */}
       <Navbar
@@ -213,27 +208,26 @@ const MainStore = () => {
           {/* Featured Tracks Showcase on Home Page */}
           {featuredTracks.length > 0 && (
             <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2">
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4 text-pink-500 dark:text-pink-400" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight">
-                      {t('featured_tracks')}
-                    </h2>
-                    <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-                      {lang === 'kh' ? 'បទចម្រៀងដែលទទួលបានការពេញនិយម និងមានការបញ្ចុះតម្លៃខ្ពស់' : 'Handpicked chart toppers with special discounts'}
-                    </p>
-                  </div>
+              <div className="mb-5 flex flex-wrap items-end justify-between gap-4 sm:mb-7">
+                <div>
+                  <p className="mb-1.5 inline-flex items-center gap-1.5 rounded-full border border-pink-600/15 bg-pink-600/[0.06] px-2.5 py-1 text-[11px] font-semibold text-pink-700 dark:border-pink-400/20 dark:bg-pink-400/10 dark:text-pink-300">
+                    <Sparkles className="h-3 w-3" />
+                    {lang === 'kh' ? 'បទល្បីៗ' : 'Editor’s Picks'}
+                  </p>
+                  <h2 className="text-xl font-extrabold tracking-tight text-zinc-900 sm:text-2xl dark:text-white">
+                    {t('featured_tracks')}
+                  </h2>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    {lang === 'kh' ? 'បទចម្រៀងដែលទទួលបានការពេញនិយម និងមានការបញ្ចុះតម្លៃខ្ពស់' : 'Handpicked chart toppers with special discounts'}
+                  </p>
                 </div>
 
                 <button
                   onClick={() => navigateToPage('products')}
-                  className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-pink-600 dark:text-pink-400 hover:bg-pink-500/10 border border-pink-500/20 transition-all cursor-pointer"
+                  className="hidden h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-700 shadow-sm transition-colors hover:border-zinc-300 hover:text-zinc-900 sm:inline-flex dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10"
                 >
                   <span>{lang === 'kh' ? 'មើលទាំងអស់' : 'View All Tracks'}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
 
@@ -245,17 +239,18 @@ const MainStore = () => {
                     categories={categories}
                     onBuyClick={handleBuyClick}
                     currencySymbol={currencySymbol}
+                    queue={featuredTracks.slice(0, 4)}
                   />
                 ))}
               </div>
 
-              <div className="sm:hidden mt-4 text-center">
+              <div className="mt-5 text-center sm:hidden">
                 <button
                   onClick={() => navigateToPage('products')}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-pink-50 dark:bg-pink-950/40 text-pink-600 dark:text-pink-400 text-xs font-bold border border-pink-200 dark:border-pink-800"
+                  className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-700 shadow-sm transition-colors hover:border-zinc-300 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10"
                 >
                   <span>{lang === 'kh' ? 'មើលបទចម្រៀងទាំងអស់' : 'View All Tracks'}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
             </section>
@@ -266,91 +261,44 @@ const MainStore = () => {
             settings={settings}
             onPromoSelect={handlePromoSelect}
           />
-
-          {/* Value Highlights on Home */}
-          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-              <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center gap-4 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-500 flex items-center justify-center shrink-0">
-                  <Headphones className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    {lang === 'kh' ? 'សំឡេងកម្រិតស្ទូឌីយោ' : 'Studio Master Quality'}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {lang === 'kh' ? 'ឯកសារ 320kbps & WAV ច្បាស់ឥតខ្ចោះ' : 'Crystal clear lossless audio formats'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center gap-4 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0">
-                  <HeartHandshake className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    {lang === 'kh' ? 'គាំទ្រសិល្បករផ្ទាល់' : 'Direct Artist Support'}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {lang === 'kh' ? 'ថវិកាដល់ដៃអ្នកបង្កើតស្នាដៃពិតៗ' : '100% transparent royalty distribution'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 flex items-center gap-4 shadow-sm">
-                <div className="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center shrink-0">
-                  <Send className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    {lang === 'kh' ? 'ទិញរហ័សតាម Telegram' : 'Instant Telegram Delivery'}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {lang === 'kh' ? 'គ្មានការបង្កើតគណនី ទទួលឯកសារភ្លាមៗ' : 'No password needed, receive files fast'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
         </div>
       )}
 
       {/* ================= PAGE 2: PRODUCTS / MUSIC ================= */}
       {currentPage === 'products' && (
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1 w-full py-8 space-y-6 sm:space-y-8">
+        <main className="mx-auto w-full max-w-7xl flex-1 space-y-7 px-4 py-10 sm:px-6 sm:space-y-9 lg:px-8">
           
           {/* Products Page Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-800/80">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-500 flex items-center justify-center shrink-0">
-                <Disc3 className="w-5 h-5" />
-              </div>
+          <div className="flex flex-col gap-4 border-b border-zinc-200 pb-5 md:flex-row md:items-center md:justify-between dark:border-white/10">
+            <div className="flex items-center gap-3.5">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-pink-600/10">
+                <Disc3 className="h-5 w-5 text-pink-600 dark:text-pink-400" />
+              </span>
               <div>
-                <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                  {lang === 'kh' ? 'បណ្ណាល័យបទចម្រៀង (All Music Products)' : 'Music Products Library'}
+                <h1 className="text-xl font-extrabold tracking-tight text-zinc-900 sm:text-2xl dark:text-white">
+                  {lang === 'kh' ? 'បណ្ណាល័យបទចម្រៀង' : 'Music Products Library'}
                 </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
                   {lang === 'kh' ? `មានបទចម្រៀងសរុប ${musicList.length} បទ អាចស្ដាប់សាកល្បងដោយឥតគិតថ្លៃ` : `Showing ${musicList.length} tracks. Preview anytime, buy via Telegram.`}
                 </p>
               </div>
             </div>
 
             {/* Quick search input on products page */}
-            <div className="w-full md:w-72">
+            <div className="w-full md:w-80">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t('search_placeholder')}
-                className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-pink-500"
+                className="h-10 w-full rounded-full border border-zinc-200 bg-white px-4 text-sm text-zinc-800 shadow-sm placeholder:text-zinc-400 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/20 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               />
             </div>
           </div>
 
           {/* Genre Filter Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            <Filter className="w-4 h-4 text-slate-400 shrink-0 ml-1 mr-1" />
+            <Filter className="ml-1 mr-1 h-4 w-4 shrink-0 text-zinc-400" />
             {genres.map((g) => {
               const isActive = selectedGenre === g;
               const catObj = categories.find(
@@ -370,10 +318,10 @@ const MainStore = () => {
                 <button
                   key={g}
                   onClick={() => setSelectedGenre(g)}
-                  className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  className={`inline-flex h-9 shrink-0 cursor-pointer items-center whitespace-nowrap rounded-full px-4 text-xs font-semibold transition-colors ${
                     isActive
-                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-md shadow-pink-500/20'
-                      : 'bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 shadow-sm dark:bg-slate-900/80 dark:hover:bg-slate-800 dark:text-slate-400 dark:hover:text-white dark:border-slate-800'
+                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-950'
+                      : 'border border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400 dark:hover:text-white'
                   }`}
                 >
                   {label}
@@ -384,19 +332,19 @@ const MainStore = () => {
 
           {/* Music Track Cards Grid */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-              <Loader2 className="w-8 h-8 text-pink-500 animate-spin mb-3" />
+            <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
+              <Loader2 className="mb-3 h-8 w-8 animate-spin text-pink-600 dark:text-pink-400" />
               <span className="text-xs sm:text-sm font-medium">Loading music catalog...</span>
             </div>
           ) : musicList.length === 0 ? (
-            <div className="text-center py-16 sm:py-20 bg-white dark:bg-slate-900/40 rounded-3xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
-              <Music2 className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400 dark:text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-700 dark:text-slate-300 font-medium text-xs sm:text-sm">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-8 py-16 text-center sm:py-20 dark:border-white/10 dark:bg-white/[0.03]">
+              <Music2 className="mx-auto mb-3 h-11 w-11 text-zinc-300 dark:text-zinc-600" />
+              <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
                 {t('no_tracks_found')}
               </p>
               <button
                 onClick={() => { setSelectedGenre('All'); setSearchQuery(''); }}
-                className="mt-4 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs text-pink-600 dark:text-pink-400 font-bold cursor-pointer transition-colors"
+                className="mt-4 inline-flex h-9 cursor-pointer items-center rounded-lg border border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-700 transition-colors hover:border-zinc-300 dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:bg-white/10"
               >
                 Reset Filters
               </button>
@@ -410,6 +358,7 @@ const MainStore = () => {
                   categories={categories}
                   onBuyClick={handleBuyClick}
                   currencySymbol={currencySymbol}
+                  queue={musicList}
                 />
               ))}
             </div>

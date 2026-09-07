@@ -6,10 +6,7 @@ import {
   Clock,
   Sparkles,
   X,
-  ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
-  ImageIcon
+  ArrowRight
 } from 'lucide-react';
 
 export const AlertPopupModal = ({ currentPage = 'home' }) => {
@@ -17,8 +14,7 @@ export const AlertPopupModal = ({ currentPage = 'home' }) => {
   const [activeAlert, setActiveAlert] = useState(null);
   const [isVisible, setIsVisible] = useState(false); // Controls DOM rendering
   const [isAnimated, setIsAnimated] = useState(false); // Controls CSS transition states
-  
-  // Track on which page the user dismissed the alert so it doesn't repeatedly pop up
+
   const [dismissedPage, setDismissedPage] = useState(null);
   const dismissedPageRef = useRef(null);
 
@@ -48,21 +44,20 @@ export const AlertPopupModal = ({ currentPage = 'home' }) => {
     }
   };
 
-  // Trigger popup presentation whenever page refreshes or when user changes page!
+  // Show popup when page refreshes or changes
   useEffect(() => {
-    // Reset dismissed state for the new page
     setDismissedPage(null);
     dismissedPageRef.current = null;
 
-    // Small delay for ultra-smooth entrance transition after page load/switch
     const timer = setTimeout(() => {
       fetchActiveAlerts(true);
     }, 450);
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
-  // Real-time broadcast sync with Admin CMS (updates data silently without forcing modal to reopen if user closed it)
+  // Cross-tab real-time sync (updates silently, does not reopen closed alert)
   useEffect(() => {
     let channel;
     try {
@@ -77,6 +72,7 @@ export const AlertPopupModal = ({ currentPage = 'home' }) => {
     return () => {
       if (channel) channel.close();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   const handleCloseInstant = () => {
@@ -88,11 +84,9 @@ export const AlertPopupModal = ({ currentPage = 'home' }) => {
   // Smooth exit transition before unmounting
   const handleClose = () => {
     setIsAnimated(false);
-    // Remember that user closed the alert on this current page so it stays closed until next page change or refresh
     setDismissedPage(currentPage);
     dismissedPageRef.current = currentPage;
 
-    // Wait for CSS transition to complete before removing from DOM
     setTimeout(() => {
       setIsVisible(false);
     }, 280);
@@ -121,6 +115,7 @@ export const AlertPopupModal = ({ currentPage = 'home' }) => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible, currentPage]);
 
   if (!isVisible || !activeAlert) return null;
@@ -147,11 +142,11 @@ export const AlertPopupModal = ({ currentPage = 'home' }) => {
     : null;
 
   return (
-    <div 
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 transition-all duration-300 ease-out ${
-        isAnimated 
-          ? 'bg-slate-950/70 backdrop-blur-md opacity-100' 
-          : 'bg-slate-950/0 backdrop-blur-none opacity-0 pointer-events-none'
+    <div
+      className={`fixed inset-0 z-[60] flex items-center justify-center p-4 transition-all duration-300 ease-out sm:p-6 ${
+        isAnimated
+          ? 'bg-zinc-950/60 opacity-100 backdrop-blur-sm'
+          : 'pointer-events-none bg-transparent opacity-0'
       }`}
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
@@ -160,118 +155,109 @@ export const AlertPopupModal = ({ currentPage = 'home' }) => {
       aria-modal="true"
       aria-labelledby="alert-dialog-title"
     >
-      {/* Modal Container */}
-      <div 
-        className={`relative w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xl shadow-pink-500/10 overflow-hidden transform transition-all duration-300 ease-out ${
-          isAnimated 
-            ? 'scale-100 translate-y-0 opacity-100' 
-            : 'scale-95 translate-y-4 opacity-0 pointer-events-none'
+      {/* Modal container */}
+      <div
+        className={`relative w-full max-w-lg transform overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl transition-all duration-300 ease-out dark:border-white/10 dark:bg-zinc-900 ${
+          isAnimated
+            ? 'translate-y-0 scale-100 opacity-100'
+            : 'pointer-events-none translate-y-4 scale-95 opacity-0'
         }`}
       >
-        {/* Glowing Gradient Accent Bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500" />
+        {/* Accent line */}
+        <div className="h-1 w-full bg-pink-600 dark:bg-pink-500" />
 
-        {/* IMAGE BANNER (If image_url is provided) */}
+        {/* Image banner (if provided) */}
         {activeAlert.image_url ? (
-          <div className="relative w-full h-44 sm:h-52 overflow-hidden bg-slate-950">
+          <div className="relative h-44 w-full overflow-hidden bg-zinc-100 sm:h-52 dark:bg-zinc-950">
             <img
               src={activeAlert.image_url}
               alt={title}
-              className="w-full h-full object-cover object-center transform hover:scale-105 transition-transform duration-700"
+              className="h-full w-full object-cover"
               onError={(e) => {
                 e.target.style.display = 'none';
               }}
             />
-            {/* Subtle Gradient overlay for contrast */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
-            
-            {/* Badge on Image */}
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-zinc-950/20 to-transparent" />
+
             {badge && (
-              <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-pink-500/40 text-pink-400 text-xs font-bold shadow-lg">
-                <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+              <div className="absolute bottom-3 left-4 inline-flex items-center gap-1.5 rounded-full bg-zinc-950/70 px-3 py-1 text-xs font-semibold text-white ring-1 ring-white/15 backdrop-blur-md">
+                <Sparkles className="h-3.5 w-3.5 text-pink-400" />
                 <span>{badge}</span>
               </div>
             )}
 
-            {/* Close Button on Image Banner */}
             <button
               onClick={handleClose}
-              className="absolute top-3.5 right-3.5 p-2 rounded-full bg-slate-950/70 hover:bg-slate-900 text-white backdrop-blur-md border border-white/20 transition-all duration-150 cursor-pointer shadow-lg hover:scale-110 active:scale-95"
+              className="absolute right-3 top-3 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-zinc-950/60 text-white ring-1 ring-white/20 transition-colors hover:bg-zinc-950"
               aria-label="Close alert"
             >
-              <X className="w-4 h-4" />
+              <X className="h-4 w-4" />
             </button>
           </div>
         ) : (
-          /* Header when no image banner */
-          <div className="p-6 pb-0 flex items-start justify-between gap-4">
+          /* Header when no image */
+          <div className="flex items-start justify-between gap-4 px-6 pt-6">
             {badge ? (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-500/10 dark:bg-pink-500/20 border border-pink-500/30 text-pink-600 dark:text-pink-400 text-xs font-bold shadow-sm">
-                <Sparkles className="w-3.5 h-3.5 text-pink-500 dark:text-pink-400 shrink-0" />
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-pink-600/15 bg-pink-600/[0.06] px-3 py-1 text-xs font-semibold text-pink-700 dark:border-pink-400/20 dark:bg-pink-400/10 dark:text-pink-300">
+                <Sparkles className="h-3.5 w-3.5 text-pink-600 dark:text-pink-400" />
                 <span>{badge}</span>
               </div>
             ) : (
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/10 dark:bg-purple-500/20 text-purple-600 dark:text-purple-300 text-xs font-semibold">
-                <Bell className="w-3.5 h-3.5 text-purple-500 shrink-0" />
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-purple-600/15 bg-purple-600/[0.06] px-3 py-1 text-xs font-semibold text-purple-700 dark:border-purple-400/20 dark:bg-purple-400/10 dark:text-purple-300">
+                <Bell className="h-3.5 w-3.5" />
                 <span>{lang === 'kh' ? 'ដំណឹងពិសេស' : 'Announcement'}</span>
               </div>
             )}
 
-            {/* Close Button */}
             <button
               onClick={handleClose}
-              className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-white"
               aria-label="Close alert"
             >
-              <X className="w-5 h-5" />
+              <X className="h-5 w-5" />
             </button>
           </div>
         )}
 
-        {/* Content Body */}
-        <div className="p-6 sm:p-7 space-y-4">
-          <div className="space-y-2">
-            <h3 
+        {/* Content body */}
+        <div className="space-y-4 px-6 pb-6 pt-5 sm:px-7 sm:pb-7">
+          <div className="space-y-2.5">
+            <h3
               id="alert-dialog-title"
-              className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-snug"
+              className="text-xl font-bold tracking-tight text-zinc-900 sm:text-2xl dark:text-white"
             >
               {title}
             </h3>
-            
-            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-line">
+
+            <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
               {message}
             </p>
           </div>
 
-          {/* Dates & Validity Section */}
           {(formattedStartDate || formattedEndDate) && (
-            <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <div className="flex flex-wrap items-center gap-2.5 text-xs">
               {formattedStartDate && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60">
-                  <Calendar className="w-3.5 h-3.5 text-pink-500 shrink-0" />
-                  <span>
-                    <strong className="font-semibold text-slate-700 dark:text-slate-200">{lang === 'kh' ? 'ចាប់ផ្ដើម៖ ' : 'Starts: '}</strong>
-                    {formattedStartDate}
-                  </span>
-                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
+                  <Calendar className="h-3.5 w-3.5 text-pink-600 dark:text-pink-400" />
+                  <strong className="font-semibold">{lang === 'kh' ? 'ចាប់ផ្ដើម' : 'Starts'}:</strong>
+                  <span>{formattedStartDate}</span>
+                </span>
               )}
               {formattedEndDate && (
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-950/40 border border-pink-200/80 dark:border-pink-800/60 text-pink-700 dark:text-pink-300 font-medium">
-                  <Clock className="w-3.5 h-3.5 text-pink-600 dark:text-pink-400 shrink-0" />
-                  <span>
-                    <strong className="font-semibold">{lang === 'kh' ? 'ផុតកំណត់៖ ' : 'Expires: '}</strong>
-                    {formattedEndDate}
-                  </span>
-                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-pink-600/20 bg-pink-600/[0.05] px-2.5 py-1.5 font-medium text-pink-700 dark:border-pink-400/20 dark:bg-pink-400/10 dark:text-pink-300">
+                  <Clock className="h-3.5 w-3.5 text-pink-600 dark:text-pink-400" />
+                  <strong className="font-semibold">{lang === 'kh' ? 'ផុតកំណត់' : 'Expires'}:</strong>
+                  <span>{formattedEndDate}</span>
+                </span>
               )}
             </div>
           )}
 
-          {/* Actions Bar */}
-          <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800/80">
+          {/* Actions */}
+          <div className="flex items-center justify-end gap-2.5 border-t border-zinc-100 pt-4 dark:border-white/10">
             <button
               onClick={handleClose}
-              className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="inline-flex h-10 cursor-pointer items-center rounded-lg px-4 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
             >
               {lang === 'kh' ? 'បិទ' : 'Dismiss'}
             </button>
@@ -279,14 +265,13 @@ export const AlertPopupModal = ({ currentPage = 'home' }) => {
             {activeAlert.link_url && (
               <button
                 onClick={handleActionClick}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold text-xs sm:text-sm shadow-md shadow-pink-500/25 transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-pink-600 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-500"
               >
                 <span>{actionText}</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="h-4 w-4" />
               </button>
             )}
           </div>
-
         </div>
       </div>
     </div>

@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { X, Tag, Send, CheckCircle2, AlertCircle, Sparkles, Music, ShieldCheck } from 'lucide-react';
+import { X, Tag, Send, CheckCircle2, AlertCircle, ShieldCheck, Music } from 'lucide-react';
 
 export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initialPromo = "" }) => {
   const { lang, t } = useLanguage();
-  
+
   const [promoCode, setPromoCode] = useState(initialPromo);
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState(null);
@@ -13,6 +13,21 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
   const [customerTelegram, setCustomerTelegram] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+
+  // Close with Escape + lock body scroll
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen || !track) return null;
 
@@ -92,92 +107,95 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md transition-colors duration-200">
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-2xl sm:rounded-3xl shadow-2xl shadow-pink-500/10 overflow-hidden flex flex-col max-h-[92vh]">
-        
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-zinc-950/60 p-4 backdrop-blur-sm cursor-pointer"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl cursor-default dark:border-white/10 dark:bg-zinc-900"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-3.5 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-pink-500/10 border border-pink-500/20 flex items-center justify-center">
-              <Music className="w-4 h-4 text-pink-500 dark:text-pink-400" />
+        <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-5 py-4 sm:px-6 dark:border-white/10">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-pink-600/10">
+              <Music className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+            </span>
+            <div>
+              <h2 className="text-sm font-bold text-zinc-900 sm:text-base dark:text-white">
+                {t('order_modal_title')}
+              </h2>
+              <p className="text-[11px] text-zinc-400">{t('instant_buy')}</p>
             </div>
-            <h2 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
-              {t('order_modal_title')}
-            </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-white/10 dark:hover:text-white"
+            aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        {/* Modal Body (Scrollable for mobile) */}
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 text-slate-800 dark:text-slate-200">
-          
-          {/* No Registration Banner (Clean Lucide Icon - No Emoji) */}
-          <div className="p-3 bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-indigo-500/10 border border-pink-500/20 rounded-xl text-xs text-pink-700 dark:text-pink-300 flex items-start gap-2.5">
-            <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500 dark:text-pink-400 shrink-0 mt-0.5" />
-            <p className="leading-relaxed text-[11px] sm:text-xs">
-              {t('no_login_banner')}
-            </p>
+        {/* Modal body */}
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
+          {/* No-registration notice */}
+          <div className="flex items-start gap-2.5 rounded-xl border border-pink-600/15 bg-pink-600/[0.05] p-3 text-pink-700 dark:border-pink-400/15 dark:bg-pink-400/[0.06] dark:text-pink-300">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+            <p className="text-xs leading-relaxed">{t('no_login_banner')}</p>
           </div>
 
-          {/* Track Summary Card */}
-          <div className="flex items-center gap-3.5 p-3 sm:p-3.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-2xl">
+          {/* Track summary */}
+          <div className="flex items-center gap-3.5 rounded-xl border border-zinc-200 bg-zinc-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03]">
             <img
               src={track.cover_image_url || "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80"}
               alt={title}
-              className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover shrink-0 border border-slate-200 dark:border-slate-800"
+              className="h-14 w-14 shrink-0 rounded-lg object-cover ring-1 ring-zinc-200 sm:h-16 sm:w-16 dark:ring-white/10"
             />
-            <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-slate-900 dark:text-white text-xs sm:text-sm truncate">{title}</h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">{artist}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] px-2 py-0.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-transparent rounded font-medium">
+            <div className="min-w-0 flex-1">
+              <h4 className="truncate text-sm font-semibold text-zinc-900 dark:text-white">{title}</h4>
+              <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{artist}</p>
+              <div className="mt-1.5 flex items-center gap-2">
+                <span className="rounded-md border border-zinc-200 bg-white px-2 py-0.5 text-[10px] font-medium text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
                   {track.genre || 'Music'}
                 </span>
                 {track.duration && (
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    {track.duration}
-                  </span>
+                  <span className="font-mono text-[10px] text-zinc-400">{track.duration}</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Promo Code Input */}
+          {/* Promo code */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-              <Tag className="w-3.5 h-3.5 text-pink-500 dark:text-pink-400" />
-              <span>{t('promo_code_label')}</span>
+            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-200">
+              <Tag className="h-3.5 w-3.5 text-pink-600 dark:text-pink-400" />
+              {t('promo_code_label')}
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={promoCode}
-                onChange={(e) => {
-                  setPromoCode(e.target.value.toUpperCase());
-                  setAppliedPromo(null);
-                  setPromoError("");
-                }}
+                onChange={(e) => setPromoCode(e.target.value)}
                 placeholder={t('promo_code_placeholder')}
-                className="flex-1 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-700/80 rounded-xl text-xs sm:text-sm font-mono text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-pink-500"
+                disabled={Boolean(appliedPromo)}
+                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs font-medium uppercase text-zinc-800 placeholder:normal-case placeholder:text-zinc-400 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/20 disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               />
               <button
                 type="button"
                 onClick={handleApplyPromo}
-                disabled={promoLoading || !promoCode.trim()}
-                className="px-4 py-2.5 bg-slate-800 dark:bg-slate-800 hover:bg-pink-600 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer"
+                disabled={promoLoading || !promoCode.trim() || Boolean(appliedPromo)}
+                className="inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-zinc-900 px-4 text-xs font-semibold text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200"
               >
                 {promoLoading ? t('applying') : t('apply_code')}
               </button>
             </div>
 
             {appliedPromo && (
-              <div className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" />
+              <div className="mt-2 flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5" />
                 <span>
                   {appliedPromo.discount_percent}% OFF ({currencySymbol}{appliedPromo.discount_amount.toFixed(2)})!
                 </span>
@@ -185,17 +203,17 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
             )}
 
             {promoError && (
-              <div className="mt-2 text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5" />
+              <div className="mt-2 flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400">
+                <AlertCircle className="h-3.5 w-3.5" />
                 <span>{promoError}</span>
               </div>
             )}
           </div>
 
-          {/* Optional Buyer Contact Info */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Optional buyer info */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+              <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
                 {lang === 'kh' ? 'ឈ្មោះរបស់អ្នក (ស្រេចចិត្ត)' : 'Your Name (Optional)'}
               </label>
               <input
@@ -203,11 +221,11 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="e.g. Chan Dara"
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-pink-500"
+                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-800 placeholder:text-zinc-400 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/20 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">
+              <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
                 {lang === 'kh' ? 'Telegram Username' : 'Telegram @Username'}
               </label>
               <input
@@ -215,80 +233,81 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
                 value={customerTelegram}
                 onChange={(e) => setCustomerTelegram(e.target.value)}
                 placeholder="@username"
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:border-pink-500"
+                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-xs text-zinc-800 placeholder:text-zinc-400 focus:border-pink-500 focus:outline-none focus:ring-2 focus:ring-pink-500/20 dark:border-white/10 dark:bg-white/5 dark:text-zinc-100 dark:placeholder:text-zinc-500"
               />
             </div>
           </div>
 
-          {/* Price Breakdown Calculation */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
-            <div className="flex justify-between text-slate-600 dark:text-slate-400">
-              <span>{t('price')} (Original)</span>
+          {/* Price breakdown */}
+          <div className="space-y-2 rounded-xl border border-zinc-200 bg-zinc-50/70 p-4 text-xs dark:border-white/10 dark:bg-white/[0.03]">
+            <div className="flex items-center justify-between text-zinc-600 dark:text-zinc-400">
+              <span>{t('original_price')}</span>
               <span className="font-mono">{currencySymbol}{originalPrice.toFixed(2)}</span>
             </div>
 
             {trackDiscountPct > 0 && (
-              <div className="flex justify-between text-pink-600 dark:text-pink-400">
-                <span>{lang === 'kh' ? 'បញ្ចុះតម្លៃបទចម្រៀង' : 'Track Discount'} (-{trackDiscountPct}%)</span>
+              <div className="flex items-center justify-between text-pink-600 dark:text-pink-400">
+                <span>{t('track_discount')} (-{trackDiscountPct}%)</span>
                 <span className="font-mono">-{currencySymbol}{trackDiscountAmount.toFixed(2)}</span>
               </div>
             )}
 
             {appliedPromo && (
-              <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-semibold">
-                <span>Promo ({appliedPromo.promo_code})</span>
+              <div className="flex items-center justify-between font-medium text-emerald-600 dark:text-emerald-400">
+                <span>{t('promo_discount')} ({appliedPromo.promo_code})</span>
                 <span className="font-mono">-{currencySymbol}{appliedPromo.discount_amount.toFixed(2)}</span>
               </div>
             )}
 
-            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex justify-between items-baseline text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-              <span>{t('final_total')}</span>
-              <span className="font-black text-pink-600 dark:text-pink-400 text-lg sm:text-xl font-mono">
+            <div className="flex items-baseline justify-between border-t border-zinc-200 pt-2.5 dark:border-white/10">
+              <span className="text-sm font-bold text-zinc-900 dark:text-white">{t('final_total')}</span>
+              <span className="font-mono text-lg font-extrabold text-zinc-900 dark:text-white">
                 {currencySymbol}{finalPrice.toFixed(2)}
               </span>
             </div>
           </div>
 
-          {/* Order Success State */}
+          {/* Success state */}
           {orderSuccess && (
-            <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs space-y-2">
-              <div className="font-bold flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <div className="space-y-2 rounded-xl border border-emerald-600/20 bg-emerald-600/[0.06] p-3.5 text-xs text-emerald-800 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300">
+              <div className="flex items-center gap-1.5 font-bold">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 <span>{lang === 'kh' ? 'បានបង្កើតវិក្កយបត្រដោយជោគជ័យ!' : 'Order Inquiry Generated!'}</span>
               </div>
-              <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                Code: <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">#{orderSuccess.reference_code}</span>. {t('open_telegram_msg')}
+              <p className="leading-relaxed text-emerald-700 dark:text-emerald-300/90">
+                Code: <span className="font-mono font-bold">#{orderSuccess.reference_code}</span>. {t('checkout_note')}
               </p>
               {orderSuccess.telegram_url && (
                 <a
                   href={orderSuccess.telegram_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-600"
                 >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{lang === 'kh' ? 'បើក Telegram ឥឡូវនេះ' : 'Open Telegram Now'}</span>
+                  <Send className="h-3.5 w-3.5" />
+                  {lang === 'kh' ? 'បើក Telegram ឥឡូវនេះ' : 'Open Telegram Now'}
                 </a>
               )}
             </div>
           )}
-
         </div>
 
-        {/* Modal Footer / Checkout CTA */}
-        <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-          <div className="text-center sm:text-left">
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{t('final_total')}</span>
-            <span className="text-xl font-black text-pink-600 dark:text-pink-400 font-mono">
+        {/* Modal footer / checkout CTA */}
+        <div className="flex shrink-0 flex-col gap-3 border-t border-zinc-100 bg-zinc-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/[0.02]">
+          <div className="flex items-baseline justify-between sm:block">
+            <span className="block text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+              {t('final_total')}
+            </span>
+            <span className="font-mono text-xl font-extrabold text-zinc-900 dark:text-white">
               {currencySymbol}{finalPrice.toFixed(2)}
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <div className="flex items-center gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-200/80 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 sm:flex-none dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
             >
               {lang === 'kh' ? 'បោះបង់' : 'Cancel'}
             </button>
@@ -297,14 +316,13 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
               type="button"
               onClick={handleTelegramCheckout}
               disabled={isSubmitting}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-sky-500/20 transition-all cursor-pointer disabled:opacity-50"
+              className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-sky-500 px-5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-sky-600 disabled:opacity-50 sm:flex-none"
             >
-              <Send className="w-4 h-4" />
-              <span>{isSubmitting ? 'Processing...' : t('checkout_telegram')}</span>
+              <Send className="h-4 w-4" />
+              <span>{isSubmitting ? 'Processing...' : t('checkout_telegram_btn')}</span>
             </button>
           </div>
         </div>
-
       </div>
     </div>
   );

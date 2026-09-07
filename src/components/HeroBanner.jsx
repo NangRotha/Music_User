@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { Sparkles, Zap, Tag, BadgePercent, Check, Copy } from 'lucide-react';
+import { Sparkles, BadgePercent, Check, Copy } from 'lucide-react';
 
 export const HeroBanner = ({ settings, onPromoSelect }) => {
   const { lang, t } = useLanguage();
@@ -24,7 +24,6 @@ export const HeroBanner = ({ settings, onPromoSelect }) => {
   useEffect(() => {
     fetchPromos();
 
-    // Listen to real-time updates from Admin CMS
     let channel;
     try {
       channel = new BroadcastChannel('khmer_beats_sync');
@@ -35,7 +34,6 @@ export const HeroBanner = ({ settings, onPromoSelect }) => {
       };
     } catch (e) {}
 
-    // Polling fallback every 4s for multi-device/tab real-time sync
     const interval = setInterval(fetchPromos, 4000);
 
     return () => {
@@ -48,7 +46,6 @@ export const HeroBanner = ({ settings, onPromoSelect }) => {
     if (onPromoSelect) {
       onPromoSelect(code);
     }
-    // Copy to clipboard for convenience
     try {
       navigator.clipboard.writeText(code);
       setCopiedCode(code);
@@ -65,69 +62,65 @@ export const HeroBanner = ({ settings, onPromoSelect }) => {
     : (settings?.banner_sub_en || t('hero_subtitle'));
 
   return (
-    <div className="relative overflow-hidden pt-6 pb-10 sm:pt-10 sm:pb-14 transition-colors duration-200">
-      {/* Subtle background glow meshes */}
-      <div className="absolute top-0 left-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-pink-500/10 dark:bg-pink-600/15 rounded-full blur-3xl pointer-events-none -z-10 animate-glow" />
-      <div className="absolute top-10 right-1/4 w-72 sm:w-96 h-72 sm:h-96 bg-purple-500/10 dark:bg-purple-600/15 rounded-full blur-3xl pointer-events-none -z-10 animate-glow" style={{ animationDelay: '2s' }} />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        
-        {/* Top Badge */}
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-pink-500/10 border border-pink-500/30 text-pink-600 dark:text-pink-400 text-xs sm:text-sm font-semibold mb-4 sm:mb-6 shadow-sm shadow-pink-500/10">
-          <Zap className="w-3.5 h-3.5 text-pink-500 dark:text-pink-400 animate-pulse" />
+    <section className="relative overflow-hidden py-10 sm:py-14">
+      <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+        {/* Eyebrow */}
+        <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-pink-600/15 bg-pink-600/[0.06] px-3.5 py-1.5 text-xs font-semibold text-pink-700 dark:border-pink-400/20 dark:bg-pink-400/10 dark:text-pink-300">
+          <Sparkles className="h-3.5 w-3.5 text-pink-600 dark:text-pink-400" />
           <span>{t('hero_badge')}</span>
         </div>
 
-        {/* Hero Title */}
-        <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight max-w-4xl mx-auto px-2">
+        {/* Title */}
+        <h1 className="mx-auto max-w-4xl text-balance text-3xl font-extrabold leading-tight tracking-tight text-zinc-900 sm:text-4xl md:text-5xl dark:text-white">
           {title}
         </h1>
 
         {/* Subtitle */}
-        <p className="mt-3 sm:mt-4 text-xs sm:text-base md:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed px-2">
+        <p className="mx-auto mt-4 max-w-2xl text-pretty text-sm leading-relaxed text-zinc-500 sm:text-base dark:text-zinc-400">
           {subtitle}
         </p>
 
-        {/* Dynamic Promo Codes from Backend */}
+        {/* Promo code chips */}
         {promos.length > 0 && (
-          <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3">
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              <BadgePercent className="w-4 h-4 text-pink-500 dark:text-pink-400" />
-              <span>{lang === 'kh' ? 'កូដបញ្ចុះតម្លៃពេញនិយម៖' : 'Hot Promo Codes:'}</span>
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              <BadgePercent className="h-4 w-4 text-pink-600 dark:text-pink-400" />
+              {lang === 'kh' ? 'កូដបញ្ចុះតម្លៃ៖' : 'Hot promo codes:'}
             </span>
-            
+
             {promos.map((promo) => {
               const isCopied = copiedCode === promo.code;
               const discountText = promo.discount_type === 'percent'
-                ? `-${promo.discount_value}% OFF`
-                : `-$${promo.discount_value} OFF`;
+                ? `${promo.discount_value}% OFF`
+                : `$${promo.discount_value} OFF`;
 
               return (
                 <button
                   key={promo.id || promo.code}
                   onClick={() => handlePromoClick(promo.code)}
-                  className="group px-3 py-1.5 bg-white dark:bg-slate-900/90 hover:bg-pink-50/50 dark:hover:bg-slate-800 border border-pink-400/40 hover:border-pink-500 rounded-xl text-xs font-mono font-bold text-pink-600 dark:text-pink-300 transition-all flex items-center gap-2 shadow-sm hover:shadow-md cursor-pointer transform hover:-translate-y-0.5 active:translate-y-0"
+                  className="group flex items-center gap-2 rounded-full border border-zinc-200 bg-white py-1.5 pl-3.5 pr-2 text-xs font-semibold text-zinc-700 shadow-sm transition-all hover:border-pink-500/40 hover:text-pink-600 cursor-pointer dark:border-white/10 dark:bg-white/5 dark:text-zinc-200 dark:hover:border-pink-400/40 dark:hover:text-pink-300"
                   title={lang === 'kh' ? `ចុចដើម្បីប្រើ ឬចម្លងកូដ ${promo.code}` : `Click to apply/copy code ${promo.code}`}
                 >
-                  <span className="tracking-wide">{promo.code}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-pink-500/15 dark:bg-pink-500/25 text-pink-700 dark:text-pink-300 font-sans font-extrabold">
+                  <span className="font-mono font-bold tracking-wide">{promo.code}</span>
+                  <span className="rounded-full bg-pink-600/10 px-2 py-0.5 text-[10px] font-bold text-pink-600 dark:bg-pink-400/10 dark:text-pink-300">
                     {discountText}
                   </span>
                   {isCopied ? (
-                    <span className="flex items-center gap-0.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-sans font-semibold">
-                      <Check className="w-3 h-3 text-emerald-500" />
-                      <span>{lang === 'kh' ? 'បានចម្លង!' : 'Copied!'}</span>
+                    <span className="flex items-center gap-0.5 pl-0.5 text-emerald-600 dark:text-emerald-400">
+                      <Check className="h-3.5 w-3.5" />
+                      {lang === 'kh' ? 'បានចម្លង' : 'Copied'}
                     </span>
                   ) : (
-                    <Copy className="w-3 h-3 text-slate-400 group-hover:text-pink-500 transition-colors opacity-0 group-hover:opacity-100" />
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-zinc-400 transition-colors group-hover:bg-pink-600/10 group-hover:text-pink-600 dark:bg-white/10 dark:group-hover:text-pink-300">
+                      <Copy className="h-3 w-3" />
+                    </span>
                   )}
                 </button>
               );
             })}
           </div>
         )}
-
       </div>
-    </div>
+    </section>
   );
 };
