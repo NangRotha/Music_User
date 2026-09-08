@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { X, Tag, Send, CheckCircle2, AlertCircle, ShieldCheck, Music } from 'lucide-react';
+import { X, Send, CheckCircle2, AlertCircle, ShieldCheck, Music, QrCode, Download, Loader2, Banknote, Tag } from 'lucide-react';
 
 export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initialPromo = "" }) => {
   const { lang, t } = useLanguage();
@@ -13,6 +13,14 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
   const [customerTelegram, setCustomerTelegram] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(null);
+
+  // ABA QR payment flow state
+  const [paymentStage, setPaymentStage] = useState('idle'); // idle | qr | paid
+  const [payment, setPayment] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+  const [downloadUrl, setDownloadUrl] = useState('');
+  const pollTimerRef = useRef(null);
 
   // Close with Escape + lock body scroll
   useEffect(() => {
@@ -28,6 +36,47 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
       document.body.style.overflow = prevOverflow;
     };
   }, [isOpen, onClose]);
+
+  // Reset ABA flow whenever the modal is opened (or the track changes)
+  useEffect(() => {
+    if (isOpen) {
+      resetAbapay();
+    } else {
+      stopPolling();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, track?.id]);
+
+  // Auto-start the download once payment is confirmed
+  useEffect(() => {
+    if (paymentStage === 'paid' && downloadUrl) {
+      const timer = setTimeout(() => {
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.setAttribute('download', '');
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }, 900);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentStage, downloadUrl]);
+
+  function stopPolling() {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  }
+
+  function resetAbapay() {
+    stopPolling();
+    setPaymentStage('idle');
+    setPayment(null);
+    setPaymentLoading(false);
+    setPaymentError('');
+    setDownloadUrl('');
+  }
 
   if (!isOpen || !track) return null;
 
@@ -68,6 +117,79 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
       setPromoError(lang === 'kh' ? "មានបញ្ហាក្នុងការត្រួតពិនិត្យកូដ" : "Failed to validate promo code");
     } finally {
       setPromoLoading(false);
+    }
+  };
+
+  const pollPaymentStatus = (transactionId, isManual = false) => {
+    fetch('/api/payments/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transaction_id: transactionId })
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).detail || 'Status check failed');
+        return res.json();
+      })
+      .then((data) => {
+        if (data.status === 'paid') {
+          stopPolling();
+          setDownloadUrl(data.download_url || '');
+          setPaymentStage('paid');
+        } else if (data.status === 'failed') {
+          stopPolling();
+          setPaymentStage('idle');
+          setPayment(null);
+          setPaymentError(t('aba_payment_failed'));
+        } else {
+          // still pending -> poll again in ~3s (per KHQRcc recommendation)
+          if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+          pollTimerRef.current = setTimeout(() => pollPaymentStatus(transactionId), 3000);
+        }
+      })
+      .catch((err) => {
+        console.error('ABA status check error:', err);
+        if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+        if (isManual) {
+          setPaymentStage('idle');
+          setPayment(null);
+          setPaymentError(t('aba_payment_failed'));
+        } else {
+          pollTimerRef.current = setTimeout(() => pollPaymentStatus(transactionId), 5000);
+        }
+      });
+  };
+
+  const startAbapay = async () => {
+    stopPolling();
+    setPaymentLoading(true);
+    setPaymentError('');
+    try {
+      const payload = {
+        music_id: track.id,
+        promo_code: appliedPromo
+          ? appliedPromo.promo_code
+          : (promoCode.trim() ? promoCode.trim().toUpperCase() : null),
+        customer_name: customerName.trim() || undefined
+      };
+      const res = await fetch('/api/payments/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || 'Failed to start ABA payment');
+      }
+      const data = await res.json();
+      setPayment(data);
+      setPaymentStage('qr');
+      pollPaymentStatus(data.transaction_id);
+    } catch (err) {
+      console.error(err);
+      setPaymentError(err.message);
+      setPaymentStage('idle');
+    } finally {
+      setPaymentLoading(false);
     }
   };
 
@@ -140,12 +262,21 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
         </div>
 
         {/* Modal body */}
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+          {paymentStage === 'idle' ? (
+            <div className="space-y-4">
           {/* No-registration notice */}
           <div className="flex items-start gap-2.5 rounded-xl border border-pink-600/15 bg-pink-600/[0.05] p-3 text-pink-700 dark:border-pink-400/15 dark:bg-pink-400/[0.06] dark:text-pink-300">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
             <p className="text-xs leading-relaxed">{t('no_login_banner')}</p>
           </div>
+
+          {paymentError && (
+            <div className="flex items-center gap-1.5 rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-600 dark:text-rose-400">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{paymentError}</span>
+            </div>
+          )}
 
           {/* Track summary */}
           <div className="flex items-center gap-3.5 rounded-xl border border-zinc-200 bg-zinc-50/70 p-3 dark:border-white/10 dark:bg-white/[0.03]">
@@ -290,38 +421,156 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
               )}
             </div>
           )}
+            </div>
+          ) : paymentStage === 'paid' ? (
+            <div className="flex flex-col items-center gap-4 py-2 text-center">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15">
+                <CheckCircle2 className="h-9 w-9 text-emerald-500 dark:text-emerald-400" />
+              </span>
+              <div>
+                <h3 className="text-lg font-extrabold text-zinc-900 dark:text-white">{t('aba_paid_title')}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                  {title} — {artist}
+                </p>
+              </div>
+              <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">{t('aba_download_note')}</p>
+              {payment?.reference_code && (
+                <p className="font-mono text-[11px] text-zinc-400">
+                  {t('aba_order_ref')}: #{payment.reference_code}
+                </p>
+              )}
+              {downloadUrl && (
+                <a
+                  href={downloadUrl}
+                  className="inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-6 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-transform hover:scale-[1.02]"
+                >
+                  <Download className="h-5 w-5" />
+                  {t('aba_download_btn')}
+                </a>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4 py-2 text-center">
+              <h3 className="text-sm font-bold text-zinc-900 sm:text-base dark:text-white">{t('aba_checkout_title')}</h3>
+
+              <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-white/10 dark:bg-white/5">
+                {payment?.qr_url ? (
+                  <img
+                    src={payment.qr_url}
+                    alt="ABA Pay QR"
+                    className="h-52 w-52 object-contain sm:h-60 sm:w-60"
+                  />
+                ) : (
+                  <div className="flex h-52 w-52 items-center justify-center sm:h-60 sm:w-60">
+                    <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+                  </div>
+                )}
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">{t('aba_amount_to_pay')}</span>
+                  <span className="font-mono text-2xl font-extrabold text-zinc-900 dark:text-white">
+                    {currencySymbol}{(payment?.amount ?? finalPrice).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <p className="max-w-sm text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                {t('aba_scan_instruction')}
+              </p>
+
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-xs font-semibold">{t('aba_waiting')} {t('aba_checking')}</span>
+              </div>
+
+              {payment?.reference_code && (
+                <p className="font-mono text-[11px] text-zinc-400">
+                  {t('aba_order_ref')}: #{payment.reference_code}
+                </p>
+              )}
+
+              {paymentError && (
+                <div className="flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-600 dark:text-rose-400">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{paymentError}</span>
+                </div>
+              )}
+
+              <div className="flex w-full gap-2">
+                <button
+                  type="button"
+                  onClick={() => { stopPolling(); resetAbapay(); }}
+                  className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
+                >
+                  {t('aba_cancel_pay')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => payment && pollPaymentStatus(payment.transaction_id, true)}
+                  className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-pink-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-pink-700"
+                >
+                  <Banknote className="h-4 w-4" />
+                  {t('aba_check_now')}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modal footer / checkout CTA */}
         <div className="flex shrink-0 flex-col gap-3 border-t border-zinc-100 bg-zinc-50/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-white/10 dark:bg-white/[0.02]">
-          <div className="flex items-baseline justify-between sm:block">
-            <span className="block text-[10px] font-medium uppercase tracking-wide text-zinc-400">
-              {t('final_total')}
-            </span>
-            <span className="font-mono text-xl font-extrabold text-zinc-900 dark:text-white">
-              {currencySymbol}{finalPrice.toFixed(2)}
-            </span>
-          </div>
+          {paymentStage === 'idle' ? (
+            <>
+              <div className="flex items-baseline justify-between sm:block">
+                <span className="block text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+                  {t('final_total')}
+                </span>
+                <span className="font-mono text-xl font-extrabold text-zinc-900 dark:text-white">
+                  {currencySymbol}{finalPrice.toFixed(2)}
+                </span>
+              </div>
 
-          <div className="flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 sm:flex-none dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
-            >
-              {lang === 'kh' ? 'បោះបង់' : 'Cancel'}
-            </button>
+              <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="inline-flex h-10 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  {lang === 'kh' ? 'បោះបង់' : 'Cancel'}
+                </button>
 
-            <button
-              type="button"
-              onClick={handleTelegramCheckout}
-              disabled={isSubmitting}
-              className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg bg-sky-500 px-5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-sky-600 disabled:opacity-50 sm:flex-none"
-            >
-              <Send className="h-4 w-4" />
-              <span>{isSubmitting ? 'Processing...' : t('checkout_telegram_btn')}</span>
-            </button>
-          </div>
+                <button
+                  type="button"
+                  onClick={startAbapay}
+                  disabled={paymentLoading || isSubmitting}
+                  className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-pink-600 to-purple-600 px-5 text-xs font-bold text-white shadow-sm transition-colors hover:from-pink-700 hover:to-purple-700 disabled:opacity-60"
+                >
+                  {paymentLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+                  <span>{t('aba_checkout_btn')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleTelegramCheckout}
+                  disabled={isSubmitting}
+                  title={t('checkout_telegram_btn')}
+                  className="inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-4 text-xs font-semibold text-sky-600 transition-colors hover:bg-sky-500/20 dark:text-sky-400"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                  <span>Telegram</span>
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-10 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white px-4 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                {lang === 'kh' ? 'បិទ' : 'Close'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
