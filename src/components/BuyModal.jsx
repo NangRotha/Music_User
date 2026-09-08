@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { X, Send, CheckCircle2, AlertCircle, ShieldCheck, Music, QrCode, Download, Loader2, Banknote, Tag, ExternalLink } from 'lucide-react';
+import { X, Send, CheckCircle2, AlertCircle, ShieldCheck, Music, QrCode, Download, Loader2, Banknote, Tag, ExternalLink, FileText } from 'lucide-react';
 
 export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initialPromo = "", storeName = "", storeLogo = "" }) => {
   const { lang, t } = useLanguage();
@@ -20,6 +20,7 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentError, setPaymentError] = useState('');
   const [downloadUrl, setDownloadUrl] = useState('');
+  const [invoiceUrl, setInvoiceUrl] = useState('');
   const pollTimerRef = useRef(null);
 
   // Close with Escape + lock body scroll
@@ -76,6 +77,7 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
     setPaymentLoading(false);
     setPaymentError('');
     setDownloadUrl('');
+    setInvoiceUrl('');
   }
 
   if (!isOpen || !track) return null;
@@ -135,6 +137,7 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
         if (data.status === 'paid') {
           stopPolling();
           setDownloadUrl(data.download_url || '');
+          setInvoiceUrl(data.invoice_url || '');
           setPaymentStage('paid');
         } else if (data.status === 'failed') {
           stopPolling();
@@ -184,6 +187,7 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
       const data = await res.json();
       setPayment(data);
       setPaymentStage('qr');
+      try { sessionStorage.setItem('khmerbeats_aba_tx', data.transaction_id); } catch (e) { /* ignore */ }
       pollPaymentStatus(data.transaction_id);
     } catch (err) {
       console.error(err);
@@ -449,6 +453,15 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
                   {t('aba_download_btn')}
                 </a>
               )}
+              {invoiceUrl && (
+                <a
+                  href={invoiceUrl}
+                  className="inline-flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/15 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
+                >
+                  <FileText className="h-4 w-4" />
+                  {t('aba_invoice_btn')}
+                </a>
+              )}
             </div>
           ) : (
             <div className="space-y-4 text-left">
@@ -538,7 +551,11 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
               <div className="flex w-full gap-2">
                 <button
                   type="button"
-                  onClick={() => { stopPolling(); resetAbapay(); }}
+                  onClick={() => {
+                    stopPolling();
+                    resetAbapay();
+                    try { sessionStorage.removeItem('khmerbeats_aba_tx'); } catch (e) { /* ignore */ }
+                  }}
                   className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
                 >
                   {t('aba_cancel_pay')}

@@ -7,6 +7,7 @@ import { MediaSlider } from './components/MediaSlider';
 import { HeroBanner } from './components/HeroBanner';
 import { MusicCard } from './components/MusicCard';
 import { BuyModal } from './components/BuyModal';
+import { PaymentSuccessNotice } from './components/PaymentSuccessNotice';
 import { BottomPlayer } from './components/BottomPlayer';
 import { Footer } from './components/Footer';
 import { AboutSection } from './components/AboutSection';
@@ -60,6 +61,30 @@ const MainStore = () => {
   // Buy Modal state
   const [selectedTrackForBuy, setSelectedTrackForBuy] = useState(null);
   const [promoCodeToPreload, setPromoCodeToPreload] = useState('');
+
+  // ABA redirect/payment recovery: after khqr.cc sends the buyer back with
+  // ?payment=success&tx=... (or a stored tx exists), confirm + offer download.
+  const [successTx, setSuccessTx] = useState(null);
+
+  useEffect(() => {
+    let tx = null;
+    try {
+      const url = new URL(window.location.href);
+      const qTx = url.searchParams.get('tx');
+      const isSuccess = url.searchParams.get('payment') === 'success';
+      if (isSuccess && qTx) tx = qTx;
+      if (qTx || isSuccess) {
+        url.searchParams.delete('payment');
+        url.searchParams.delete('tx');
+        window.history.replaceState({}, '', url);
+      }
+    } catch (e) { /* ignore */ }
+
+    if (!tx) {
+      try { tx = sessionStorage.getItem('khmerbeats_aba_tx') || null; } catch (e) { /* ignore */ }
+    }
+    if (tx) setSuccessTx(tx);
+  }, []);
 
   // Fetch Settings
   const fetchSettings = useCallback(() => {
@@ -399,6 +424,18 @@ const MainStore = () => {
 
       {/* Notice / Announcement Alert Popup Modal (Shows on page refresh or page change) */}
       <AlertPopupModal currentPage={currentPage} />
+
+      {/* ABA payment recovery / download-after-redirect notice */}
+      {successTx && (
+        <PaymentSuccessNotice
+          transactionId={successTx}
+          onClose={() => {
+            try { sessionStorage.removeItem('khmerbeats_aba_tx'); } catch (e) { /* ignore */ }
+            setSuccessTx(null);
+          }}
+          currencySymbol={currencySymbol}
+        />
+      )}
 
     </div>
   );
