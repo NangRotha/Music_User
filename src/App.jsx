@@ -393,6 +393,8 @@ const MainStore = () => {
         }}
         currencySymbol={currencySymbol}
         initialPromo={promoCodeToPreload}
+        storeName={lang === 'kh' ? (settings?.site_name_kh || settings?.site_name_en) : (settings?.site_name_en || settings?.site_name_kh)}
+        storeLogo={settings?.logo_url || ''}
       />
 
       {/* Notice / Announcement Alert Popup Modal (Shows on page refresh or page change) */}

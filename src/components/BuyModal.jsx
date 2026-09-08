@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { X, Send, CheckCircle2, AlertCircle, ShieldCheck, Music, QrCode, Download, Loader2, Banknote, Tag } from 'lucide-react';
+import { X, Send, CheckCircle2, AlertCircle, ShieldCheck, Music, QrCode, Download, Loader2, Banknote, Tag, ExternalLink } from 'lucide-react';
 
-export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initialPromo = "" }) => {
+export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initialPromo = "", storeName = "", storeLogo = "" }) => {
   const { lang, t } = useLanguage();
 
   const [promoCode, setPromoCode] = useState(initialPromo);
@@ -82,6 +82,7 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
 
   const title = lang === 'kh' ? (track.title_kh || track.title_en) : track.title_en;
   const artist = lang === 'kh' ? (track.artist_kh || track.artist_en) : track.artist_en;
+  const merchantName = storeName || (lang === 'kh' ? 'ហាងតន្ត្រី KhmerBeats' : 'KhmerBeats Music Store');
 
   const originalPrice = track.price;
   const trackDiscountPct = track.discount_percent || 0;
@@ -450,43 +451,81 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
               )}
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-4 py-2 text-center">
-              <h3 className="text-sm font-bold text-zinc-900 sm:text-base dark:text-white">{t('aba_checkout_title')}</h3>
-
-              <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-white/10 dark:bg-white/5">
-                {payment?.qr_url ? (
-                  <img
-                    src={payment.qr_url}
-                    alt="ABA Pay QR"
-                    className="h-52 w-52 object-contain sm:h-60 sm:w-60"
-                  />
-                ) : (
-                  <div className="flex h-52 w-52 items-center justify-center sm:h-60 sm:w-60">
-                    <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
-                  </div>
-                )}
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400">{t('aba_amount_to_pay')}</span>
-                  <span className="font-mono text-2xl font-extrabold text-zinc-900 dark:text-white">
-                    {currencySymbol}{(payment?.amount ?? finalPrice).toFixed(2)}
+            <div className="space-y-4 text-left">
+              {/* Header: title + live status */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-600 to-rose-600 text-white shadow-lg shadow-pink-600/25">
+                    <QrCode className="h-5 w-5" />
                   </span>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-extrabold text-zinc-900 dark:text-white">{t('aba_scan_with')}</h3>
+                    <p className="truncate text-[10px] font-bold uppercase tracking-widest text-pink-600 dark:text-pink-400">ABA Pay • KHQR</p>
+                  </div>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+                  </span>
+                  {t('aba_waiting')}
+                </span>
+              </div>
+
+              {/* Payment ticket */}
+              <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-white/10 dark:bg-zinc-900">
+                <div className="flex items-center justify-between gap-2 border-b border-dashed border-zinc-200 bg-gradient-to-r from-pink-600/[0.07] via-rose-600/[0.04] to-transparent px-4 py-2.5 dark:border-white/10">
+                  <div className="flex min-w-0 items-center gap-2">
+                    {storeLogo ? <img src={storeLogo} alt="" className="h-5 w-5 shrink-0 object-contain" /> : <Music className="h-4 w-4 shrink-0 text-pink-500" />}
+                    <span className="truncate text-xs font-bold text-zinc-800 dark:text-zinc-100">{merchantName}</span>
+                  </div>
+                  <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-zinc-400">{t('aba_pay_to')}</span>
+                </div>
+
+                <div className="flex flex-col items-center gap-3 px-4 pt-4 pb-3">
+                  <div className="rounded-2xl bg-zinc-50 p-3 ring-1 ring-zinc-200/70 dark:bg-zinc-800/40 dark:ring-white/10">
+                    {payment?.qr_url ? (
+                      <img src={payment.qr_url} alt="ABA Pay QR" className="h-48 w-48 object-contain sm:h-56 sm:w-56" />
+                    ) : (
+                      <div className="flex h-48 w-48 items-center justify-center sm:h-56 sm:w-56">
+                        <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400">{t('aba_amount_to_pay')}</p>
+                    <p className="font-mono text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
+                      {currencySymbol}{(payment?.amount ?? finalPrice).toFixed(2)}
+                    </p>
+                  </div>
+                  {payment?.qr_url && (
+                    <a href={payment.qr_url} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-pink-600 transition-colors hover:text-pink-700 dark:text-pink-400">
+                      <ExternalLink className="h-3 w-3" />
+                      {t('aba_open_larger')}
+                    </a>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 divide-x divide-dashed divide-zinc-200 border-t border-dashed border-zinc-200 bg-zinc-50/80 text-center dark:divide-white/10 dark:border-white/10 dark:bg-white/[0.03]">
+                  <div className="px-3 py-2.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400">{t('aba_order_ref')}</p>
+                    <p className="mt-0.5 font-mono text-[11px] font-bold text-zinc-700 dark:text-zinc-200">#{payment?.reference_code || '—'}</p>
+                  </div>
+                  <div className="px-3 py-2.5">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400">{t('aba_meta_transaction')}</p>
+                    <p className="mt-0.5 truncate font-mono text-[11px] font-bold text-zinc-700 dark:text-zinc-200">
+                      {payment?.transaction_id ? `…${payment.transaction_id.slice(-8)}` : '—'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <p className="max-w-sm text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-                {t('aba_scan_instruction')}
-              </p>
-
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-xs font-semibold">{t('aba_waiting')} {t('aba_checking')}</span>
+              {/* How-to note */}
+              <div className="flex items-start gap-2 rounded-xl border border-sky-500/15 bg-sky-500/[0.06] px-3 py-2.5 dark:border-sky-400/10 dark:bg-sky-400/[0.06]">
+                <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
+                <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-300">{t('aba_scan_instruction')}</p>
               </div>
-
-              {payment?.reference_code && (
-                <p className="font-mono text-[11px] text-zinc-400">
-                  {t('aba_order_ref')}: #{payment.reference_code}
-                </p>
-              )}
 
               {paymentError && (
                 <div className="flex items-center gap-1.5 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-xs text-rose-600 dark:text-rose-400">
@@ -495,23 +534,30 @@ export const BuyModal = ({ track, isOpen, onClose, currencySymbol = "$", initial
                 </div>
               )}
 
+              {/* Actions */}
               <div className="flex w-full gap-2">
                 <button
                   type="button"
                   onClick={() => { stopPolling(); resetAbapay(); }}
-                  className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
+                  className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white px-3 text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
                 >
                   {t('aba_cancel_pay')}
                 </button>
                 <button
                   type="button"
                   onClick={() => payment && pollPaymentStatus(payment.transaction_id, true)}
-                  className="inline-flex h-10 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-pink-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-pink-700"
+                  disabled={!payment}
+                  className="inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-pink-600 to-rose-600 px-3 text-xs font-bold text-white shadow-lg shadow-pink-600/20 transition-colors hover:from-pink-700 hover:to-rose-700 disabled:opacity-50"
                 >
                   <Banknote className="h-4 w-4" />
                   {t('aba_check_now')}
                 </button>
               </div>
+
+              <p className="flex items-center justify-center gap-1.5 text-center text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+                <ShieldCheck className="h-3 w-3" />
+                {t('aba_secure_by')}
+              </p>
             </div>
           )}
         </div>
