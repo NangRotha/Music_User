@@ -12,6 +12,8 @@ import { BottomPlayer } from './components/BottomPlayer';
 import { Footer } from './components/Footer';
 import { AboutSection } from './components/AboutSection';
 import { AlertPopupModal } from './components/AlertPopupModal';
+import { NotFoundPage } from './components/NotFoundPage';
+import { PAGE_PATHS, pageFromPath } from './utils/routing';
 import {
   Sparkles,
   Disc3,
@@ -24,30 +26,61 @@ import {
 const MainStore = () => {
   const { lang, t } = useLanguage();
   
-  // Multi-Page Routing state: 'home' | 'products' | 'about'
+  // Clean-path page routing state: 'home' | 'products' | 'about' | 'notfound'.
+  // No '#/' in the URL anymore — pages live at '/', '/products' and '/about'.
   const getInitialPage = () => {
-    const hash = window.location.hash.replace('#/', '').replace('#', '').trim();
-    if (hash === 'products' || hash === 'about') return hash;
-    return 'home';
+    const hashRoute = window.location.hash.replace(/^#\/?/, '').trim();
+    if (hashRoute === 'home') return 'home';
+    if (hashRoute === 'products') return 'products';
+    if (hashRoute === 'about') return 'about';
+    // Unknown legacy hash (e.g. '#/whatever') -> 404 page.
+    if (window.location.hash && hashRoute) return 'notfound';
+    return pageFromPath();
   };
 
   const [currentPage, setCurrentPage] = useState(getInitialPage);
 
   const navigateToPage = (page) => {
-    const targetPage = (page === 'home' || page === 'products' || page === 'about') ? page : 'home';
-    setCurrentPage(targetPage);
-    window.location.hash = targetPage === 'home' ? '#/' : `#/${targetPage}`;
+    const targetPath = PAGE_PATHS[page];
+    if (!targetPath) {
+      // Unknown / unsupported target -> friendly 404 screen.
+      setCurrentPage('notfound');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
+    if (pageFromPath() !== page) {
+      window.history.pushState({}, '', targetPath);
+      setCurrentPage(page);
+    }
     window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
+  // Migrate any legacy hash URLs (#/, #/products, #/about, ...) to clean
+  // paths once on load so the address bar never keeps the '#'.
   useEffect(() => {
-    const handleHashChange = () => {
-      const page = getInitialPage();
-      setCurrentPage(page);
+    const { hash } = window.location;
+    if (hash) {
+      const hashRoute = hash.replace(/^#\/?/, '').trim();
+      const cleanPath =
+        hashRoute === '' || hashRoute === 'home' ? '/' :
+        hashRoute === 'products' ? '/products' :
+        hashRoute === 'about' ? '/about' :
+        `/${hashRoute}`;
+      window.history.replaceState({}, '', cleanPath);
+      setCurrentPage(pageFromPath());
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Update the page state when the user presses Back/Forward.
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPage(pageFromPath());
       window.scrollTo({ top: 0, behavior: 'instant' });
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const [settings, setSettings] = useState(null);
@@ -136,6 +169,11 @@ const MainStore = () => {
 
   // Sync Browser Title Icon (Favicon) & Page Title from Site Settings Logo
   useEffect(() => {
+    // 404 page gets its own title.
+    if (currentPage === 'notfound') {
+      document.title = '404 Page Not Found';
+      return;
+    }
     if (settings) {
       if (settings.logo_url) {
         const iconLinks = document.querySelectorAll("link[rel*='icon']");
@@ -150,7 +188,7 @@ const MainStore = () => {
         document.title = `${titleName} - Music Store (ទិញបទចម្រៀងតាម Telegram)`;
       }
     }
-  }, [settings, lang]);
+  }, [settings, lang, currentPage]);
 
   // Initial load
   useEffect(() => {
@@ -399,6 +437,11 @@ const MainStore = () => {
         </div>
       )}
 
+      {/* ================= PAGE 404: NOT FOUND ================= */}
+      {currentPage === 'notfound' && (
+        <NotFoundPage onNavigate={navigateToPage} />
+      )}
+
       {/* Footer */}
       <Footer settings={settings} />
 
@@ -423,7 +466,7 @@ const MainStore = () => {
       />
 
       {/* Notice / Announcement Alert Popup Modal (Shows on page refresh or page change) */}
-      <AlertPopupModal currentPage={currentPage} />
+      {currentPage !== 'notfound' && <AlertPopupModal currentPage={currentPage} />}
 
       {/* ABA payment recovery / download-after-redirect notice */}
       {successTx && (

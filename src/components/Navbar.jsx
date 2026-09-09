@@ -101,7 +101,7 @@ export const Navbar = ({ settings, searchQuery, setSearchQuery, currentPage = 'h
           {/* Brand */}
           <div className="flex min-w-0 items-center gap-2.5">
             <a
-              href="#/"
+              href="/"
               onClick={(e) => handleNavClick(e, 'home')}
               className="group flex cursor-pointer items-center gap-2.5 transition-transform active:scale-[0.99]"
               aria-label={siteName}

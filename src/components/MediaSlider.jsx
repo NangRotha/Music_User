@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { PAGE_PATHS, pageFromLink } from '../utils/routing';
 import {
   Sparkles,
   ChevronLeft,
@@ -95,17 +96,22 @@ export const MediaSlider = ({ onNavigate }) => {
 
   const handleActionClick = (linkUrl) => {
     if (!linkUrl) return;
-    if (linkUrl.startsWith('#/')) {
-      const page = linkUrl.replace('#/', '');
-      if (onNavigate) {
-        onNavigate(page || 'home');
-      } else {
-        window.location.hash = linkUrl;
-      }
-    } else if (linkUrl.startsWith('http')) {
-      window.open(linkUrl, '_blank');
-    } else if (onNavigate) {
-      onNavigate(linkUrl);
+    const value = String(linkUrl).trim();
+
+    // External link → new tab.
+    if (value.startsWith('http')) {
+      window.open(value, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // Internal page link — supports both clean paths ('/products', '/about')
+    // and the legacy '#'-style values stored in slide data ('#/products').
+    const page = pageFromLink(value);
+    if (onNavigate) {
+      onNavigate(page || 'home');
+    } else if (page) {
+      // No parent navigator supplied — keep a clean URL fallback.
+      window.history.pushState({}, '', PAGE_PATHS[page]);
     }
   };
 
@@ -274,7 +280,7 @@ export const MediaSlider = ({ onNavigate }) => {
                 </button>
               )}
               <button
-                onClick={() => handleActionClick('#/products')}
+                onClick={() => handleActionClick('/products')}
                 className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border border-white/25 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur-md transition-colors hover:bg-white/20"
               >
                 {lang === 'kh' ? 'មើលបទចម្រៀងទាំងអស់' : 'Browse Catalog'}
